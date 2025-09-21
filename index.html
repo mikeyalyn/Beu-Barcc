@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Beu Instrument — Plushie Piano</title>
+  <title>Beu Instrument — Plushie Piano (Extended)</title>
   <style>
     :root{--bg:#0f1220;--card:#151935;--ink:#f2f5ff;--accent:#a7c4ff;--accent2:#ffd2f9}
     *{box-sizing:border-box} body{margin:0;font-family:ui-rounded,system-ui,Segoe UI,Roboto,Apple Color Emoji,Twitter Color Emoji,Noto Color Emoji;background:linear-gradient(180deg,#0f1220,#0c0f1a);color:var(--ink);min-height:100svh;display:grid;place-items:center}
-    .wrap{width:min(980px,92vw);padding:28px}
+    .wrap{width:min(1000px,94vw);padding:28px}
     .card{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.35);padding:22px}
     h1{margin:0 0 8px;font-size:clamp(20px,2.6vw,30px)}
     p{opacity:.86;margin:0 0 18px}
-    .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    .grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:12px}
     .key{position:relative;user-select:none;cursor:pointer;background:#1a1f45;border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 12px;text-align:center;transition:.15s transform,.15s box-shadow}
     .key kbd{display:inline-block;font-weight:700;background:rgba(255,255,255,.06);padding:.3em .55em;border-radius:8px;margin-bottom:6px}
     .key small{display:block;opacity:.8}
@@ -28,8 +28,8 @@
 <body>
   <div class="wrap">
     <div class="card">
-      <h1>Beu Instrument — Plushie Piano</h1>
-      <p>Drop the four sound files next to this HTML: <code>beu_squeak.wav</code>, <code>beu_plop.wav</code>, <code>beu_barcc.wav</code>, <code>beu_eepy.wav</code>. Then click <b>Enable Audio</b> and mash the keys :3</p>
+      <h1>Beu Instrument — Plushie Piano (Extended)</h1>
+      <p>Make sure all WAV files are next to this HTML (the original 4 + the new 13 barccs). Click <b>Enable Audio</b> then smash the keys :3</p>
 
       <div class="row">
         <button id="enable">Enable Audio</button>
@@ -38,13 +38,9 @@
       <div id="status" class="hint"></div>
 
       <h3 style="margin:18px 0 10px">Key Map</h3>
-      <div class="grid" id="keys">
-        <!-- Keys are injected by JS -->
-      </div>
-      <div class="footer">
-        Space = Random Beu barcc · Enter = Eepy Beu · Shift = Plop · Hold ↑/↓ to change pitch while playing.
-      </div>
-      <div class="hint">If you don't hear anything, make sure your browser allowed audio and the WAVs are placed beside this file.</div>
+      <div class="grid" id="keys"></div>
+
+      <div class="footer">Row 1 = Squeaks/Plops · Row 2 = Special Barccs · Space = Random Barcc · Enter = Eepy Beu · Shift = Plop · ↑/↓ = Pitch bend</div>
       <div id="error" class="hint err"></div>
     </div>
   </div>
@@ -63,7 +59,21 @@
     {label:'L', note:'BARCC', file:'beu_barcc.wav', rate:1.0},
     {label:';', note:'PLOP',  file:'beu_plop.wav', rate:1.0},
     {label:"'", note:'SQUEAL',file:'beu_squeak.wav', rate:2.25},
-    {label:'/', note:'LOW squeak', file:'beu_squeak.wav', rate:0.75}
+    {label:'/', note:'LOW squeak', file:'beu_squeak.wav', rate:0.75},
+    // New: Barcc Pack row (Q-–)
+    {label:'Q', note:'Double', file:'beu_double_barcc.wav', rate:1.0},
+    {label:'W', note:'Zoomie', file:'beu_zoomie_barcc.wav', rate:1.0},
+    {label:'E', note:'Echo', file:'beu_echo_barcc.wav', rate:1.0},
+    {label:'R', note:'Muffled', file:'beu_muffled_barcc.wav', rate:1.0},
+    {label:'T', note:'Stutter', file:'beu_stutter_barcc.wav', rate:1.0},
+    {label:'Y', note:'Hungry', file:'beu_hungry_barcc.wav', rate:1.0},
+    {label:'U', note:'Sleepy', file:'beu_sleepy_barcc.wav', rate:1.0},
+    {label:'I', note:'Angy', file:'beu_angy_barcc.wav', rate:1.0},
+    {label:'O', note:'Happy', file:'beu_happy_barcc.wav', rate:1.0},
+    {label:'P', note:'Reverse', file:'beu_reverse_barcc.wav', rate:1.0},
+    {label:'[', note:'Harmonized', file:'beu_harmonized_barcc.wav', rate:1.0},
+    {label:']', note:'Mega', file:'beu_mega_barcc.wav', rate:1.0},
+    {label:'-', note:'Glitchy', file:'beu_glitchy_barcc.wav', rate:1.0}
   ];
 
   let ctx, gain;
@@ -71,11 +81,6 @@
   const activeUI = new Map();
   const statusEl = document.getElementById('status');
   const errEl = document.getElementById('error');
-
-  const keyToIdx = {
-    'a':0,'s':1,'d':2,'f':3,'g':4,'h':5,'j':6,'k':7,
-    'l':8,';':9,"'":10,'/':11
-  };
 
   const keysWrap = document.getElementById('keys');
   keyLayout.forEach((k,i)=>{
@@ -87,18 +92,24 @@
     activeUI.set(i, el);
   });
 
+  const keyToIdx = {
+    'a':0,'s':1,'d':2,'f':3,'g':4,'h':5,'j':6,'k':7,
+    'l':8,';':9,"'":10,'/':11,
+    // Barcc Pack row
+    'q':12,'w':13,'e':14,'r':15,'t':16,'y':17,'u':18,'i':19,'o':20,'p':21,'[':22,']':23,'-':24
+  };
+  keyLayout.forEach((k,i)=>{ keyToIdx[k.label.toLowerCase()] = i; });
+
   async function setup() {
     try {
       ctx = new (window.AudioContext || window.webkitAudioContext)();
       gain = ctx.createGain();
-      gain.gain.value = 0.9; // master volume
+      gain.gain.value = 0.9;
       gain.connect(ctx.destination);
-
-      // Preload all referenced files
       const files = [...new Set(keyLayout.map(k=>k.file).concat(['beu_eepy.wav']))];
       statusEl.textContent = 'Loading samples…';
       await Promise.all(files.map(loadFile));
-      statusEl.textContent = 'Ready! Press keys, or Space/Enter for specials.';
+      statusEl.textContent = 'Ready! Press keys!';
       errEl.textContent = '';
     } catch (e) {
       console.error(e);
@@ -111,19 +122,17 @@
     const res = await fetch(name);
     if (!res.ok) throw new Error('Missing file: '+name);
     const arr = await res.arrayBuffer();
-    const buf = await (ctx.decodeAudioData ? ctx.decodeAudioData(arr) : new Promise((ok,err)=>ctx.decodeAudioData(arr,ok,err)));
+    const buf = await new Promise((ok,err)=>ctx.decodeAudioData(arr,ok,err));
     buffers.set(name, buf);
   }
 
-  function playBuffer(name, {rate=1, detune=0, when=0}={}){
+  function playBuffer(name, {rate=1, when=0}={}){
     const buf = buffers.get(name);
     if (!buf) return;
     const src = ctx.createBufferSource();
     src.buffer = buf;
     src.playbackRate.value = rate;
-    if (src.detune) src.detune.value = detune;
 
-    // Per-note envelope (soft attack/release)
     const v = ctx.createGain();
     v.gain.value = 0.0;
     v.connect(gain);
@@ -134,7 +143,6 @@
 
     src.connect(v);
     src.start(now);
-
     return {src, v};
   }
 
@@ -152,57 +160,46 @@
     playBuffer(spec.file, {rate: spec.rate});
   }
 
-  // Specials
   function randomBarcc(){
-    const rate = 0.85 + Math.random()*0.7; // slightly low to squealy high
-    playBuffer('beu_barcc.wav', {rate});
+    const barccs = keyLayout.filter(k=>k.note.includes('Barcc'));
+    const pick = barccs[Math.floor(Math.random()*barccs.length)];
+    playBuffer(pick.file,{rate:pick.rate});
   }
-  function eepy(){
-    playBuffer('beu_eepy.wav', {rate:1});
-  }
-  function plop(){
-    playBuffer('beu_plop.wav', {rate:1});
-  }
+  function eepy(){ playBuffer('beu_eepy.wav',{rate:1}); }
+  function plop(){ playBuffer('beu_plop.wav',{rate:1}); }
 
-  // Tiny demo: little phrase + random interruptions
   async function demo(){
     if (!ctx) return;
-    const base = ctx.currentTime + 0.1;
     const seq = [0,1,2,3,4,5,6,7];
     seq.forEach((i,step)=>{
       playBuffer(keyLayout[i].file,{rate:keyLayout[i].rate, when:(step*0.22)});
-      // 40% chance Beu interrupts with a squeak or barcc
-      if (Math.random()<0.4){
-        const w = 0.1 + step*0.22 + Math.random()*0.1;
-        if (Math.random()<0.6) playBuffer('beu_squeak.wav',{rate:1.6, when:w}); else randomBarcc();
+      if (Math.random()<0.5){
+        setTimeout(randomBarcc, step*220 + 120);
       }
     });
-    // Sleepy ending
     setTimeout(eepy, 1800);
   }
 
-  // Pitch bend with arrow keys while a note is playing (simple: just repeats with altered rate)
-  let bend = 0; // semitones
+  let bend = 0;
   window.addEventListener('keydown', (e)=>{
     if (!ctx) return;
     if (e.key === ' '){ e.preventDefault(); randomBarcc(); return; }
     if (e.key === 'Enter'){ e.preventDefault(); eepy(); return; }
     if (e.key === 'Shift'){ e.preventDefault(); plop(); return; }
-    if (e.key === 'ArrowUp'){ bend = Math.min(12, bend+1); statusEl.textContent = `Pitch bend: +${bend} st`; return; }
-    if (e.key === 'ArrowDown'){ bend = Math.max(-12, bend-1); statusEl.textContent = `Pitch bend: ${bend} st`; return; }
+    if (e.key === 'ArrowUp'){ bend = Math.min(12,bend+1); statusEl.textContent=`Pitch bend: +${bend} st`; return; }
+    if (e.key === 'ArrowDown'){ bend = Math.max(-12,bend-1); statusEl.textContent=`Pitch bend: ${bend} st`; return; }
     const i = keyToIdx[e.key.toLowerCase()];
-    if (i != null){
+    if (i!=null){
       const spec = keyLayout[i];
-      const rate = spec.rate * Math.pow(2, bend/12);
+      const rate = spec.rate * Math.pow(2,bend/12);
       blip(i);
-      playBuffer(spec.file, {rate});
+      playBuffer(spec.file,{rate});
     }
   });
 
   document.getElementById('enable').addEventListener('click', async ()=>{
     await setup();
-    // On iOS/some browsers resume after gesture
-    if (ctx && ctx.state === 'suspended') await ctx.resume();
+    if (ctx && ctx.state==='suspended') await ctx.resume();
   });
   document.getElementById('demo').addEventListener('click', demo);
 })();
