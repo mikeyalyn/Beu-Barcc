@@ -167,6 +167,18 @@
   }
   function eepy(){ playBuffer('beu_eepy.wav',{rate:1}); }
   function plop(){ playBuffer('beu_plop.wav',{rate:1}); }
+  // Random Pack Barcc + Emotes
+  const emoteMap = { Double:'✨', Zoomie:'💨', Echo:'🌀', Muffled:'🧸', Stutter:'🔁', Hungry:'🍪', Sleepy:'😴', Angy:'😤', Happy:'💖', Reverse:'🔄', Harmonized:'🎶', Mega:'🚀', Glitchy:'🪀' };
+  function showEmote(name){ const emoji = emoteMap[name] || '🐾'; if (emoteEl) emoteEl.innerHTML = `<span class="bubble">${emoji} ${name}</span>`; }
+  function randomPackBarcc(){
+    const packIdxStart = 12; // first pack index in keyLayout
+    const idx = packIdxStart + Math.floor(Math.random() * (keyLayout.length - packIdxStart));
+    const spec = keyLayout[idx];
+    const rate = 0.9 + Math.random()*0.4;
+    blip(idx);
+    playBuffer(spec.file, {rate});
+    showEmote(spec.note);
+  }
 
   async function demo(){
     if (!ctx) return;
@@ -202,6 +214,8 @@
     if (ctx && ctx.state==='suspended') await ctx.resume();
   });
   document.getElementById('demo').addEventListener('click', demo);
+  const randBtn = document.getElementById('randBarcc');
+  if (randBtn) randBtn.addEventListener('click', randomPackBarcc);
 })();
 </script>
 </body>
